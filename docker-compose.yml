@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://user:pass@postgres:5432/ems_db
+      - REDIS_URL=redis://redis:6379/0
+      - VLLM_API_BASE=http://host.docker.internal:8001
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ./logs:/app/logs
+      - ./.env:/app/.env
+    restart: unless-stopped
+    networks:
+      - ems-network
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: ems_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: pass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    networks:
+      - ems-network
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - ems-network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  ems-network:
+    driver: bridge
