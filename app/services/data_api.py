@@ -53,7 +53,7 @@ class DataAPIService:
             "iedName": device_id,
             "startDate": start_time,
             "endDate": end_time,
-            "time_range": time_range
+            "timeRange": time_range
         }
 
         headers = await self._get_headers(request_headers)
@@ -68,7 +68,36 @@ class DataAPIService:
                                  url=url)
                     raise Exception(f"API Error: {response.status}")
 
-    async def get_energy_statistics(self, energy_type: str,
+    async def get_device_chart(self, device_id: str, metric: str,
+                              start_time: str, end_time: str,
+                              time_range: int,
+                              request_headers: Optional[Dict] = None) -> Dict:
+        """获取设备数据（POST）"""
+        url = f"{self.base_url}/energyGeneration/chart"
+        if metric == "发电量":
+            url = f"{self.base_url}/energyGeneration/chart"
+
+
+        payload = {
+            "iedName": device_id,
+            "startDate": start_time,
+            "endDate": end_time,
+            "timeRange": time_range
+        }
+
+        headers = await self._get_headers(request_headers)
+
+        async with aiohttp.ClientSession(headers=headers) as session:
+            async with session.post(url, json=payload) as response:
+                if response.status == 200:
+                    return await response.json()
+                else:
+                    logger.error("API request failed",
+                                 status=response.status,
+                                 url=url)
+                    raise Exception(f"API Error: {response.status}")
+
+    async def get_energy_statistics(self, metric: str,
                                     start_time: str, end_time: str,
                                     time_range: int,
                                     request_headers: Optional[Dict] = None) -> Dict:
@@ -76,10 +105,10 @@ class DataAPIService:
         url = f"{self.base_url}/energy/statistics"
 
         payload = {
-            "energy_type": energy_type,
+            "metric": metric,
             "start_time": start_time,
             "end_time": end_time,
-            "time_range": time_range
+            "timeRange": time_range
         }
         headers = await self._get_headers(request_headers)
 

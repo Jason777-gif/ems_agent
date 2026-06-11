@@ -58,7 +58,7 @@ class EnergyQueryTool:
     description = "查询发电量、用电量等能耗统计信息"
 
     async def execute(self, device_id: Optional[str] = None,
-                      energy_type: str = "generation",
+                      metric: str = "generation",
                       start_time: Optional[str] = None,
                       end_time: Optional[str] = None,
                       time_range: Optional[int] = None,
@@ -66,21 +66,12 @@ class EnergyQueryTool:
         """执行能耗查询"""
         logger.info("Executing energy query",
                     device_id=device_id,
-                    energy_type=energy_type)
+                    metric=metric)
 
         try:
             if not start_time or not end_time:
                 end_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 start_time = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d %H:%M:%S")
-
-            # 构建能耗查询请求
-            metric_map = {
-                "generation": "发电量",  # 发电量
-                "consumption": "用电量",  # 用电量
-                "efficiency": "能效"  # 能效
-            }
-
-            metric = metric_map.get(energy_type, "energy_generation")
 
             if device_id:
                 # 查询特定设备的能耗
@@ -95,7 +86,7 @@ class EnergyQueryTool:
             else:
                 # 查询总体能耗统计
                 data = await data_api_service.get_energy_statistics(
-                    energy_type=energy_type,
+                    metric=metric,
                     start_time=start_time,
                     end_time=end_time,
                     time_range=time_range,
@@ -105,8 +96,8 @@ class EnergyQueryTool:
             return {
                 "success": True,
                 "data": data,
-                "energy_type": energy_type,
-                "message": f"成功查询到{energy_type}能耗数据"
+                "metric": metric,
+                "message": f"成功查询到{metric}能耗数据"
             }
         except Exception as e:
             logger.error("Energy query failed", error=str(e))
@@ -159,41 +150,41 @@ class ChartGeneratorTool:
     name = "chart_generator"
     description = "根据数据生成图表配置（前端渲染用）"
 
-    async def execute(self, data: List[Dict],
-                      chart_type: str = "line",
-                      title: str = "",
-                      x_field: str = "timestamp",
-                      y_fields: List[str] = None) -> Dict:
+    async def execute(self, device_id: str, metric: str,
+                      start_time: Optional[str] = None,
+                      end_time: Optional[str] = None,
+                      time_range: Optional[int] = None,
+                      request_headers: Optional[Dict] = None) -> Dict:
         """生成图表配置"""
-        logger.info("Generating chart",
-                    chart_type=chart_type,
-                    title=title)
+        logger.info("Generating chart config",
+                    device_id=device_id,
+                    metric=metric,
+                    start_time=start_time,
+                    end_time=end_time,
+                    time_range=time_range,
+                    request_headers=request_headers
+                    )
+        try:
+            chart_config = await data_api_service.get_device_chart(
+                device_id=device_id,
+                metric=metric,
+                start_time=start_time,
+                end_time=end_time,
+                time_range=time_range,
+                request_headers=request_headers
+            )
+            return {
+                "success": True,
+                "chart_config": chart_config,
+                "message": "图表配置生成成功"
+            }
 
-        chart_config = {
-            "type": chart_type,
-            "title": title,
-            "data": data,
-            "xAxis": {
-                "field": x_field,
-                "label": "时间"
-            },
-            "yAxis": {
-                "fields": y_fields or [],
-                "label": "数值"
-            },
-            "series": []
-        }
+        except Exception as e:
+            logger.error("chart_generator failed", error=str(e))
+            return {
+                "success": False,
+                "error": str(e),
+                "message": "图表配置生成失败"
+            }
 
-        if y_fields:
-            for field in y_fields:
-                chart_config["series"].append({
-                    "field": field,
-                    "label": field,
-                    "type": "line"
-                })
 
-        return {
-            "success": True,
-            "chart_config": chart_config,
-            "message": "图表配置生成成功"
-        }

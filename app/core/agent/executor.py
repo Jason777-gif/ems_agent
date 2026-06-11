@@ -127,7 +127,7 @@ class AgentExecutor:
             )
 
         elif intent == IntentType.QUERY_ENERGY.value:
-            energy_type = entities.get("energy_type", "generation")
+            metric = entities.get("metric", "")
             device_id = entities.get("device")
             time_range = entities.get("time", 0)
 
@@ -135,7 +135,7 @@ class AgentExecutor:
             end_time = entities.get("end_time", "")
 
             logger.info("Energy query params",
-                        energy_type=energy_type,
+                        energy_type=metric,
                         device_id=device_id,
                         time_range=time_range,
                         start_time=start_time,
@@ -144,7 +144,7 @@ class AgentExecutor:
             tool = self.tools["energy_query"]
             return await tool.execute(
                 device_id=device_id,
-                energy_type=energy_type,
+                metric=metric,
                 start_time=start_time,
                 end_time=end_time,
                 time_range=time_range,
@@ -163,12 +163,28 @@ class AgentExecutor:
             )
 
         elif intent == IntentType.GENERATE_CHART.value:
-            data = entities.get("data", [])
-            chart_type = entities.get("chart_type", "line")
-            title = entities.get("title", "")
+            device_id = entities.get("device", "")
+            metric = entities.get("metric", "")
+            time_range = entities.get("time", 0)
+
+            # 解析时间范围
+            start_time = entities.get("start_time", "")
+            end_time = entities.get("end_time", "")
+
+            logger.info("Parsed time range",
+                        time_range=time_range,
+                        start_time=start_time,
+                        end_time=end_time)
 
             tool = self.tools["chart_generator"]
-            return await tool.execute(data, chart_type, title)
+            return await tool.execute(
+                device_id=device_id,
+                metric=metric,
+                start_time=start_time,
+                end_time=end_time,
+                time_range=time_range,
+                request_headers=request_headers
+             )
 
         else:
             return {
