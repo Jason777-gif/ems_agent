@@ -1,6 +1,8 @@
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
+from django.contrib.messages import SUCCESS
+
 # from jsonschema.benchmarks.contains import end
 
 from app.core.agent.intent_classifier import intent_classifier, IntentType
@@ -166,7 +168,7 @@ class AgentExecutor:
             device_id = entities.get("device", "")
             metric = entities.get("metric", "")
             time_range = entities.get("time", 0)
-
+            chart_type  = entities.get("chart_type", 0)
             # 解析时间范围
             start_time = entities.get("start_time", "")
             end_time = entities.get("end_time", "")
@@ -174,7 +176,8 @@ class AgentExecutor:
             logger.info("Parsed time range",
                         time_range=time_range,
                         start_time=start_time,
-                        end_time=end_time)
+                        end_time=end_time,
+                        chart_type = chart_type)
 
             tool = self.tools["chart_generator"]
             return await tool.execute(
@@ -183,8 +186,15 @@ class AgentExecutor:
                 start_time=start_time,
                 end_time=end_time,
                 time_range=time_range,
+                chart_type=chart_type,
                 request_headers=request_headers
              )
+        elif intent == IntentType.GENERATE_REPORT.value:
+            # tool = self.tools["report_generator"]
+            return {
+                "success": SUCCESS,
+                "message": "允许执行"
+            }
 
         else:
             return {

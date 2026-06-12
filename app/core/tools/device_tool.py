@@ -154,6 +154,7 @@ class ChartGeneratorTool:
                       start_time: Optional[str] = None,
                       end_time: Optional[str] = None,
                       time_range: Optional[int] = None,
+                      chart_type: Optional[int] = None,
                       request_headers: Optional[Dict] = None) -> Dict:
         """生成图表配置"""
         logger.info("Generating chart config",
@@ -162,6 +163,7 @@ class ChartGeneratorTool:
                     start_time=start_time,
                     end_time=end_time,
                     time_range=time_range,
+                    chart_type = chart_type,
                     request_headers=request_headers
                     )
         try:
@@ -171,6 +173,7 @@ class ChartGeneratorTool:
                 start_time=start_time,
                 end_time=end_time,
                 time_range=time_range,
+                chart_type=chart_type,
                 request_headers=request_headers
             )
             return {

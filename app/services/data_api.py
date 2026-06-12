@@ -71,6 +71,7 @@ class DataAPIService:
     async def get_device_chart(self, device_id: str, metric: str,
                               start_time: str, end_time: str,
                               time_range: int,
+                               chart_type: int,
                               request_headers: Optional[Dict] = None) -> Dict:
         """获取设备数据（POST）"""
         url = f"{self.base_url}/energyGeneration/chart"
@@ -90,7 +91,11 @@ class DataAPIService:
         async with aiohttp.ClientSession(headers=headers) as session:
             async with session.post(url, json=payload) as response:
                 if response.status == 200:
-                    return await response.json()
+                    result = await response.json()
+                    # 如果result的data返回的是列表，最外层添加 chartType；如果是字典，直接添加
+                    if isinstance(result, dict):
+                        result["chartType"] = chart_type
+                    return result
                 else:
                     logger.error("API request failed",
                                  status=response.status,

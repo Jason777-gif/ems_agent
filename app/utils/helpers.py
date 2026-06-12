@@ -69,12 +69,12 @@ def extract_device_id(text: str) -> Optional[str]:
 def extract_metric_type(text: str) -> Optional[str]:
     """从文本中提取指标类型"""
     metric_map = {
-        '功率': 'power',
-        '电压': 'voltage',
-        '电流': 'current',
-        '温度': 'temperature',
-        '发电量': 'energy_generation',
-        '效率': 'efficiency'
+        '功率': '功率',
+        '电压': '电压',
+        '电流': '电流',
+        '温度': '温度',
+        '发电量': '发电量',
+        '效率': '效率'
     }
 
     for keyword, metric in metric_map.items():

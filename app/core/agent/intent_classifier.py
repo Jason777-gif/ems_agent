@@ -15,6 +15,7 @@ class IntentType(Enum):
     QUERY_ALARM = "query_alarm"  # 查询告警
     QUERY_ENERGY = "query_energy"  # 查询能耗
     GENERATE_CHART = "generate_chart"  # 生成图表
+    GENERATE_REPORT = "generate_report"
     UNKNOWN = "unknown"  # 未知意图
 
 
@@ -28,12 +29,14 @@ class IntentClassifier:
 2. query_alarm - 查询告警信息
 3. query_energy - 查询发电量、能耗等统计信息
 4. generate_chart - 生成图表（趋势图、柱状图等）
-5. unknown - 无法识别的意图
+5. generate_report - 生成报告
+6. unknown - 无法识别的意图
+
 
 请以JSON格式返回结果，包含：
 - intent: 意图类型
 - confidence: 置信度(0-1)
-- entities: 提取的实体（device: 设备标识, metric: 指标类型, start_time: 开始时间（时间格式是:%Y-%m-%d %H:%M:%S）, end_time: 结束时间（时间格式是:%Y-%m-%d %H:%M:%S）, time: 日期类型,0:日 1:月 2：年 3:自定义）
+- entities: 提取的实体（device: 设备标识, metric: 指标类型, start_time: 开始时间（时间格式是:%Y-%m-%d %H:%M:%S）, end_time: 结束时间（时间格式是:%Y-%m-%d %H:%M:%S）, time: 日期类型,0:日 1:月 2：年 3:自定义, chart_type: 图表类型,0:折线 1:柱状）
 
 示例：
 用户："查询逆变器1今天的电压"
@@ -58,7 +61,7 @@ class IntentClassifier:
         messages = [{"role": "system", "content": self.SYSTEM_PROMPT}]
 
         if conversation_history:
-            messages.extend(conversation_history[-5:])
+            messages.extend(conversation_history[:])
 
         messages.append({"role": "user", "content": user_input})
 
@@ -92,6 +95,9 @@ class IntentClassifier:
             if not entities.get("start_time"):
                 entities["start_time"] = (datetime.now() - timedelta(hours=1)).strftime("%Y-%m-%d %H:%M:%S")
                 entities["end_time"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            # 如果 LLM 没有提取到 chart_type，尝试从文本中提取
+            if not entities.get("chart_type"):
+                entities["chart_type"] = 0
             logger.info("Intent classified",
                         intent=result.get("intent"),
                         confidence=result.get("confidence"),
