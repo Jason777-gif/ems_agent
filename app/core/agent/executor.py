@@ -48,7 +48,12 @@ class AgentExecutor:
 
             intent = intent_result.get("intent")
             entities = intent_result.get("entities", {})
-
+            # 如果意图未知，直接调用LLM进行回复
+            if not intent or intent == IntentType.QUERY_DEVICE_DATA.value:
+                return await self._default_generate_response(
+                    user_input,
+                    conversation_history
+                )
             step2_start = datetime.now()
             result = await self._execute_intent(intent, entities, request_headers)
             step2_end = datetime.now()
@@ -247,6 +252,26 @@ class AgentExecutor:
             "role": "user",
             "content": f"工具返回结果：{str(tool_result)}"
         })
+
+        response = await llm_client.chat_completion(
+            messages=messages,
+            temperature=0.7,
+            max_tokens=1000
+        )
+
+        return response
+
+    async def _default_generate_response(self, user_input: str,
+                                 history: List[Dict]) -> str:
+        """生成自然语言回复"""
+        system_prompt = """你是一个专业的中文翻译助手。将用户输入翻译成地道的中文，保持原文的语气和风格。"""
+
+        messages = [{"role": "system", "content": system_prompt}]
+
+        if history:
+            messages.extend(history[-3:])
+
+        messages.append({"role": "user", "content": user_input})
 
         response = await llm_client.chat_completion(
             messages=messages,
