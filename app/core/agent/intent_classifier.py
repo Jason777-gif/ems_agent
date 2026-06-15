@@ -32,6 +32,10 @@ class IntentClassifier:
 5. generate_report - 生成报告
 6. unknown - 无法识别的意图
 
+当用户提到以下关键词时，应识别为 generate_report：
+- "报告"、"日报"、"周报"、"月报"、"年报"
+- "总结"、"汇总"、"统计分析"
+- "综合情况"、"运行情况"、"运行报告"
 
 请以JSON格式返回结果，包含：
 - intent: 意图类型
@@ -53,6 +57,19 @@ class IntentClassifier:
 
 用户："查看逆变器5昨天的电压"
 返回：{"intent": "query_device_data", "confidence": 0.92, "entities": {"device": "逆变器5", "metric": "电压", "start_time": "2026-06-09 00:00:00", "end_time": "2026-06-09 23:59:59", time:0}}
+
+用户："生成今天的运行日报"
+返回：{"intent": "generate_report", "confidence": 0.95, "entities": {"report_type": "daily", "start_time": "2026-06-12 00:00:00", "end_time": "2026-06-12 23:59:59", "time": 0}}
+
+用户："生成逆变器1本周的综合报告"
+返回：{"intent": "generate_report", "confidence": 0.93, "entities": {"device": "逆变器1", "report_type": "comprehensive", "start_time": "2026-06-06 00:00:00", "end_time": "2026-06-12 23:59:59", "time": 3}}
+
+用户："生成这个月的能耗统计报告"
+返回：{"intent": "generate_report", "confidence": 0.94, "entities": {"report_type": "energy", "start_time": "2026-06-01 00:00:00", "end_time": "2026-06-30 23:59:59", "time": 1}}
+
+用户："生成设备告警汇总报告"
+返回：{"intent": "generate_report", "confidence": 0.92, "entities": {"report_type": "alarm"}}
+
 """
 
     async def classify(self, user_input: str,

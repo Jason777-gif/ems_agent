@@ -8,6 +8,7 @@ from django.contrib.messages import SUCCESS
 from app.core.agent.intent_classifier import intent_classifier, IntentType
 from app.core.tools.device_tool import DeviceQueryTool, AlarmQueryTool, ChartGeneratorTool,EnergyQueryTool
 from app.core.llm.client import llm_client
+from app.core.tools.report_tool import ReportGeneratorTool
 from app.services.redis_client import redis_service
 from app.utils.logger import get_logger
 from app.utils.helpers import parse_time_range, extract_device_id, extract_metric_type
@@ -23,7 +24,8 @@ class AgentExecutor:
             "device_query": DeviceQueryTool(),
             "energy_query": EnergyQueryTool(),
             "alarm_query": AlarmQueryTool(),
-            "chart_generator": ChartGeneratorTool()
+            "chart_generator": ChartGeneratorTool(),
+            "report_generator": ReportGeneratorTool()
         }
         logger.info("Agent executor initialized")
 
@@ -173,8 +175,10 @@ class AgentExecutor:
             start_time = entities.get("start_time", "")
             end_time = entities.get("end_time", "")
 
-            logger.info("Parsed time range",
+            logger.info("chart_generator",
                         time_range=time_range,
+                        metric=metric,
+                        device_id=device_id,
                         start_time=start_time,
                         end_time=end_time,
                         chart_type = chart_type)
@@ -190,11 +194,31 @@ class AgentExecutor:
                 request_headers=request_headers
              )
         elif intent == IntentType.GENERATE_REPORT.value:
-            # tool = self.tools["report_generator"]
-            return {
-                "success": SUCCESS,
-                "message": "允许执行"
-            }
+            report_type = entities.get("report_type", "")
+            device_id = entities.get("device", "")
+            metric = entities.get("metric", "")
+            start_time = entities.get("start_time", "")
+            end_time = entities.get("end_time", "")
+            time_range = entities.get("time", 0)
+
+            logger.info("report_generator",
+                        report_type=report_type,
+                        device_id=device_id,
+                        metric=metric,
+                        start_time=start_time,
+                        end_time=end_time,
+                        time_range=time_range)
+
+            tool = self.tools["report_generator"]
+            return await tool.execute(
+                device_id=device_id,
+                metric=metric,
+                start_time=start_time,
+                end_time=end_time,
+                time_range=time_range,
+                report_type=report_type,
+                request_headers=request_headers
+            )
 
         else:
             return {
@@ -208,9 +232,10 @@ class AgentExecutor:
         """生成自然语言回复"""
         system_prompt = """你是一个新能源平台的智能助手。根据工具返回的结果，用简洁、专业的语言回答用户问题。
 
-如果工具有数据返回，请用中文总结关键信息。
-如果有图表配置，提示用户可以在前端查看可视化图表。
-如果查询失败，友好地告知用户并给出建议。"""
+        如果工具有数据返回，请用中文总结关键信息。
+        如果有图表配置，提示用户可以在前端查看可视化图表。
+        如果有报告数据，请简要介绍报告的主要内容和结论，告知用户报告的详细信息已准备好。
+        如果查询失败，友好地告知用户并给出建议。"""
 
         messages = [{"role": "system", "content": system_prompt}]
 
