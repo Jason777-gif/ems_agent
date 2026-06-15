@@ -1,14 +1,14 @@
 from typing import Any, Dict, List, Optional
 import aiohttp
 import json
-
+from LightAgent import LightAgent
 from app.config.settings import settings
 from app.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
 
-class VLLMClient:
+class LightClient:
     """vLLM模型客户端"""
 
     def __init__(self):
@@ -16,23 +16,22 @@ class VLLMClient:
         self.model = settings.VLLM_MODEL
         logger.info(f"VLLM Client initialized with model: {self.model}")
 
-    async def chat_completion(self, messages: List[Dict],
-                              temperature: float = 0.7,
-                              max_tokens: int = 2000) -> str:
+    async def chat_completion(self, content : str,
+                              history: Optional[List[Dict]] = None,
+                              role: str = "user",
+                              instructions: str  = "You are a helpful assistant.",
+                              tools: Optional[List[Any]] = None) -> str:
         """调用vLLM完成对话"""
-        url = f"{self.api_base}/v1/chat/completions"
 
-        payload = {
-            "model": self.model,
-            "messages": messages,
-            "temperature": temperature,
-            "max_tokens": max_tokens,
-            "stream": False
-        }
+        url = f"{self.api_base}/v1"
 
-        headers = {
-            "Content-Type": "application/json"
-        }
+        # 初始化 Agent
+        agent = LightAgent(instructions= instructions,role = role,model=self.model, api_key="none", base_url=url, tools=tools)
+
+        # 运行 Agent
+        run = agent.run(query=content, history=history)
+        print( run)
+        return run
 
         try:
             async with aiohttp.ClientSession() as session:
@@ -51,4 +50,4 @@ class VLLMClient:
             raise
 
 
-llm_client = VLLMClient()
+light_client = LightClient()

@@ -1,8 +1,10 @@
 
 from typing import Dict, List, Optional
 from datetime import datetime, timedelta
+
+from app.core.light.client import light_client
 from app.services.data_api import data_api_service
-from app.core.llm.client import llm_client
+
 from app.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -276,10 +278,8 @@ class ReportGeneratorTool:
 }}"""
 
         try:
-            response = await llm_client.chat_completion(
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.3,
-                max_tokens=300
+            response = await light_client.chat_completion(
+                content = prompt
             )
             import json
             return json.loads(response)
@@ -307,10 +307,8 @@ class ReportGeneratorTool:
 4. 使用专业但易懂的语言"""
 
         try:
-            response = await llm_client.chat_completion(
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.5,
-                max_tokens=200
+            response = await light_client.chat_completion(
+                content = prompt
             )
             return response
         except Exception as e:
@@ -326,10 +324,8 @@ class ReportGeneratorTool:
 请包含总发电量、效率评价等关键信息。"""
 
         try:
-            response = await llm_client.chat_completion(
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.3,
-                max_tokens=150
+            response = await light_client.chat_completion(
+                content= prompt
             )
             return response
         except Exception as e:
@@ -369,10 +365,8 @@ class ReportGeneratorTool:
 请评估系统健康状况并给出建议。"""
 
         try:
-            response = await llm_client.chat_completion(
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.3,
-                max_tokens=150
+            response = await light_client.chat_completion(
+                content= prompt
             )
             return response
         except Exception as e:
@@ -393,10 +387,8 @@ class ReportGeneratorTool:
 3. 给出改进建议"""
 
         try:
-            response = await llm_client.chat_completion(
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.5,
-                max_tokens=250
+            response = await light_client.chat_completion(
+                content=  prompt
             )
             return response
         except Exception as e:

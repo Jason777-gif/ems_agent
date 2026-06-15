@@ -6,8 +6,8 @@ from django.contrib.messages import SUCCESS
 # from jsonschema.benchmarks.contains import end
 
 from app.core.agent.intent_classifier import intent_classifier, IntentType
+from app.core.light.client import light_client
 from app.core.tools.device_tool import DeviceQueryTool, AlarmQueryTool, ChartGeneratorTool,EnergyQueryTool
-from app.core.llm.client import llm_client
 from app.core.tools.report_tool import ReportGeneratorTool
 from app.services.redis_client import redis_service
 from app.utils.logger import get_logger
@@ -49,7 +49,7 @@ class AgentExecutor:
             intent = intent_result.get("intent")
             entities = intent_result.get("entities", {})
             # 如果意图未知，直接调用LLM进行回复
-            if not intent or intent == IntentType.QUERY_DEVICE_DATA.value:
+            if intent is None or intent == IntentType.UNKNOWN.value:
                 return await self._default_generate_response(
                     user_input,
                     conversation_history
@@ -235,49 +235,35 @@ class AgentExecutor:
                                  tool_result: Dict,
                                  history: List[Dict]) -> str:
         """生成自然语言回复"""
-        system_prompt = """你是一个新能源平台的智能助手。根据工具返回的结果，用简洁、专业的语言回答用户问题。
+        system_prompt = """根据工具返回的结果，用简洁、专业的语言回答用户问题。
 
         如果工具有数据返回，请用中文总结关键信息。
         如果有图表配置，提示用户可以在前端查看可视化图表。
         如果有报告数据，请简要介绍报告的主要内容和结论，告知用户报告的详细信息已准备好。
         如果查询失败，友好地告知用户并给出建议。"""
 
-        messages = [{"role": "system", "content": system_prompt}]
+        user_input =  user_input +  f"工具返回结果：{str(tool_result)}"
+        response = await light_client.chat_completion(
+                instructions = system_prompt,
+                role = "你是一个新能源平台的智能助手",
+                history= history[:],
+                content= user_input
+            )
 
-        if history:
-            messages.extend(history[-3:])
-
-        messages.append({"role": "user", "content": user_input})
-        messages.append({
-            "role": "user",
-            "content": f"工具返回结果：{str(tool_result)}"
-        })
-
-        response = await llm_client.chat_completion(
-            messages=messages,
-            temperature=0.7,
-            max_tokens=1000
-        )
 
         return response
 
     async def _default_generate_response(self, user_input: str,
                                  history: List[Dict]) -> str:
         """生成自然语言回复"""
-        system_prompt = """你是一个专业的中文翻译助手。将用户输入翻译成地道的中文，保持原文的语气和风格。"""
+        system_prompt = """将用户输入翻译成地道的中文，保持原文的语气和风格。"""
 
-        messages = [{"role": "system", "content": system_prompt}]
-
-        if history:
-            messages.extend(history[-3:])
-
-        messages.append({"role": "user", "content": user_input})
-
-        response = await llm_client.chat_completion(
-            messages=messages,
-            temperature=0.7,
-            max_tokens=1000
-        )
+        response = await light_client.chat_completion(
+                instructions = system_prompt,
+                role = "你是一个专业的中文翻译助手",
+                history= history[:],
+                content= user_input
+            )
 
         return response
 

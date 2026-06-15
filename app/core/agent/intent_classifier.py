@@ -3,7 +3,8 @@ from typing import Dict, List, Optional
 import json
 import re
 from datetime import datetime, timedelta
-from app.core.llm.client import llm_client
+
+from app.core.light.client import light_client
 from app.utils.logger import get_logger
 from app.utils.helpers import extract_device_id, extract_metric_type, parse_time_range
 
@@ -75,18 +76,13 @@ class IntentClassifier:
     async def classify(self, user_input: str,
                        conversation_history: List[Dict] = None) -> Dict:
         """分类用户意图"""
-        messages = [{"role": "system", "content": self.SYSTEM_PROMPT}]
-
-        if conversation_history:
-            messages.extend(conversation_history[:])
-
-        messages.append({"role": "user", "content": user_input})
 
         try:
-            response = await llm_client.chat_completion(
-                messages=messages,
-                temperature=0.3,
-                max_tokens=500
+            response = await light_client.chat_completion(
+                instructions = self.SYSTEM_PROMPT,
+                role = "你是一个新能源平台的意图识别助手",
+                history= conversation_history[:],
+                content= user_input
             )
 
             result = json.loads(response)
